@@ -1,0 +1,180 @@
+<?php $baseUrl = Yii::app()->baseUrl; ?>
+<!doctype html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lucky Draw Show</title>
+    <link href="<?php echo $baseUrl; ?>/css/lato.css" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo $baseUrl; ?>/css/lucky.css" />
+</head>
+
+<body>
+    <style>
+        body {
+            background: url("<?php echo $backgroundPath ? $backgroundPath : "/images/background.jpg"; ?>") no-repeat;
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+    <canvas id="fxCanvas" class="fx"></canvas>
+    <canvas id="petalCanvas" class="fx"></canvas>
+    <canvas id="boomCanvas" class="fx" style="z-index: 2000;"></canvas>
+
+    <div id="lightSweep" class="light-sweep"></div>
+    <div class="screen">
+        <div class="spin-area">
+            <div id="specialMsg" class="special-msg hidden">Ai sẽ là người may mắn nhất hôm nay......</div>
+            <div class="board hidden" id="board">
+                <div id="prizeName" class="prize">—</div>
+                <div class="dice-wrap">
+                    <div id="reelsWrap" class="reels-wrap hidden">
+                        <div class="reel" id="reel1">
+                            <div class="reel-strip">0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9</div>
+                            <div class="reel-cover hidden" data-index="0"><span>?</span></div>
+                        </div>
+                        <div class="reel" id="reel2">
+                            <div class="reel-strip">0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9</div>
+                            <div class="reel-cover hidden" data-index="1"><span>?</span></div>
+                        </div>
+                        <div class="reel" id="reel3">
+                            <div class="reel-strip">0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9</div>
+                            <div class="reel-cover hidden" data-index="2"><span>?</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Khu vực hiển thị người trúng giải duy nhất (nếu giải có quantity=1) -->
+    <div id="winnerCenter"
+        class="winner-center <?= (isset($prize) && $prize['quantity'] == 1 && count($winnerList) > 0) ? '' : 'hidden' ?>">
+        <ul id="winnerListCenter">
+            <?php if (isset($prize) && $prize['quantity'] == 1): ?>
+                <?php foreach ($winnerList as $w): ?>
+                    <li>
+                        <span class="center-content">
+                            <span class="numberBlock"><?= CHtml::encode($w['code']) ?></span>
+                            <div class="info-block">
+                                <span class="partname"><?= CHtml::encode($w['full_name']) ?></span>
+                                <span class="job"><?= CHtml::encode($w['department']) ?></span>
+                            </div>
+                        </span>
+                        <button class="btn-delete" data-id="<?= $w['id'] ?>" data-prize="<?= $w['prize_id'] ?>"
+                            title="Huỷ người này">🗑</button>
+                    </li>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </ul>
+    </div>
+
+    <!-- Cánh gà trái (chỉ hiện nếu quantity > 1) -->
+    <div id="winnersLeft"
+        class="winners-side left <?= (isset($prize) && $prize['quantity'] > 1 && count($winnerList) > 0) ? '' : 'hidden' ?>">
+        <!--    <div class="side-title">🎉 Người trúng giải</div>-->
+        <ul id="winnerListLeft">
+            <?php foreach ($winnerList as $i => $w): ?>
+                <?php if ($i % 2 === 0): ?>
+                    <li>
+                        <span class="numberBlock">
+                            <b><?= CHtml::encode($w['code']) ?></b>
+                        </span>
+                        <span class="partInfo">
+                            <span class="partname"><?= CHtml::encode($w['full_name']) ?></span>
+                            <span class="job"><?= CHtml::encode($w['department']) ?></span>
+                        </span>
+                        <button class="btn-delete" data-id="<?= $w['id'] ?>" data-prize="<?= $w['prize_id'] ?>"
+                            title="Huỷ người này">❌</button>
+                    </li>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+
+    <!-- Cánh gà phải -->
+    <div id="winnersRight"
+        class="winners-side right <?= (isset($prize) && $prize['quantity'] > 1 && count($winnerList) > 0) ? '' : 'hidden' ?>">
+        <ul id="winnerListRight">
+            <?php foreach ($winnerList as $i => $w): ?>
+                <?php if ($i % 2 === 1): ?>
+                    <li>
+                        <span class="numberBlock">
+                            <b><?= CHtml::encode($w['code']) ?></b>
+                        </span>
+                        <span class="partInfo">
+                            <span class="partname"><?= CHtml::encode($w['full_name']) ?></span>
+                            <span class="job"><?= CHtml::encode($w['department']) ?></span>
+                        </span>
+                        <button class="btn-delete" data-id="<?= $w['id'] ?>" data-prize="<?= $w['prize_id'] ?>"
+                            title="Huỷ người này">❌</button>
+                    </li>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+    <!-- Consolation Board -->
+    <div id="consolationBoard" class="consolation-board hidden">
+        <div id="consolationGrid" class="consolation-grid"></div>
+        <div id="consolationActions" class="consolation-actions hidden">
+            <button class="btn cancel" onclick="cancelWinner()">❌ Hủy</button>
+            <button class="btn confirm" onclick="confirmWinner()">✅ Xác nhận</button>
+        </div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="winnerOverlay" class="overlay hidden"></div>
+
+    <!-- Popup -->
+    <div id="winnerPopup" class="winner-popup hidden">
+        <div class="popup-header">
+            🎉 XIN CHÚC MỪNG
+        </div>
+
+        <div class="popup-body">
+            <div id="singleWinnerWrapper">
+                <div id="bigCode" class="code">----</div>
+                <div id="fullName" class="line fullname">—</div>
+                <div id="department" class="line sub position">—</div>
+                <div id="company" class="line sub division">—</div>
+            </div>
+            <div id="multiWinnerContainer" class="multi-winner-container hidden"></div>
+        </div>
+
+        <div class="popup-actions">
+            <button class="btn cancel" onclick="cancelWinner()">❌ Hủy</button>
+            <button class="btn confirm" onclick="confirmWinner()">✅ Xác nhận</button>
+        </div>
+    </div>
+
+    <div class="hint">
+        Nhấn <b>SPACE</b> để quay
+        <span id="remaining" class="pill">—</span>
+    </div>
+    <div class="next-area">
+        <div id="prizeCounter" class="prize-counter">0 / 0</div>
+        <button id="btnNextPrize" class="btn-next next-price">➡ Tiếp</button>
+    </div>
+    <script>
+        window.__API = {
+            spin: "<?php echo $baseUrl; ?>/api/spin",
+            prize: "<?php echo $baseUrl; ?>/api/prize",
+            status: "<?php echo $baseUrl; ?>/api/status",
+            confirm: "<?php echo $baseUrl; ?>/api/confirmWinner",
+            cancel: "<?php echo $baseUrl; ?>/api/cancelWinner",
+            nextPrize: "<?php echo $baseUrl; ?>/api/nextPrize",
+            checkAuth: "<?php echo $baseUrl; ?>/api/checkAuth",
+            remoteSpin: "<?php echo $baseUrl; ?>/api/remoteSpin",
+            checkRemote: "<?php echo $baseUrl; ?>/api/checkRemote",
+        };
+    </script>
+    <script src="<?php echo $baseUrl; ?>/js/jquery-3.6.0.min.js"></script>
+    <script src="<?php echo $baseUrl; ?>/js/fireworks-modern.js"></script>
+    <script src="<?php echo $baseUrl; ?>/js/sweetalert2.all.min.js"></script>
+    <script src="<?php echo $baseUrl; ?>/js/lucky-show.js"></script>
+</body>
+
+</html>
